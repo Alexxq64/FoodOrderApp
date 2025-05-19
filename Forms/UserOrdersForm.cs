@@ -2,6 +2,8 @@
 using System.Windows.Forms;
 using FoodOrderApp.Services;
 using FoodOrderApp.Helpers;
+using FoodOrderApp.Models;
+using System.Collections.Generic;
 
 namespace FoodOrderApp.Forms
 {
@@ -15,6 +17,7 @@ namespace FoodOrderApp.Forms
             this.Text = "Мои заказы";
             this.Width = 800;
             this.Height = 600;
+            this.StartPosition = FormStartPosition.CenterScreen;
 
             ordersListBox = new ListBox
             {
@@ -48,10 +51,25 @@ namespace FoodOrderApp.Forms
                 return;
             }
 
+            ordersListBox.Items.Clear();
+
             var orders = OrderService.GetUserOrders(user.Id);
+
+            if (orders.Count == 0)
+            {
+                ordersListBox.Items.Add("Заказов не найдено.");
+                ordersListBox.Enabled = false;
+                return;
+            }
+
+            ordersListBox.Enabled = true;
+
+            // Добавляем в ListBox строки с информацией о заказах
             foreach (var order in orders)
             {
-                ordersListBox.Items.Add(order);
+                // Формируем строку, например: "№1 от 19.05.2025 - Статус: Ожидает - Сумма: 1200₽"
+                string displayText = $"№{order.Id} от {order.OrderDateTime.ToString("dd.MM.yyyy HH:mm")} - Статус: {order.Status} - Сумма: {order.TotalPrice}₽";
+                ordersListBox.Items.Add(displayText);
             }
         }
     }
