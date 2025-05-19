@@ -27,10 +27,12 @@ namespace FoodOrderApp.Forms
                 return; // Выход из программы
             }
 
-            var mainForm = new MainForm();
-            mainForm.SetStatus("Соединение с БД успешно установлено.");
+            var startupForm = new StartupForm();
+            startupForm.SetStatus("Соединение с БД успешно установлено.");
 
-            Application.Run(mainForm);
+            DatabaseSeeder.CheckAndPromptDatabaseSeed();
+
+            Application.Run(startupForm);
         }
     }
 }
