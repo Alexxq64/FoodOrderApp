@@ -72,9 +72,9 @@ namespace FoodOrderApp.Forms
                 // Сохраняем пользователя в сессии
                 Session.CurrentUser = user;
 
-                var mainForm = new MainForm(); // теперь без параметров
-                mainForm.Show();
-                this.Hide();
+                Session.CurrentUser = user;
+                this.DialogResult = DialogResult.OK; // Закрываем форму и возвращаем OK
+                this.Close();
             }
             else
             {

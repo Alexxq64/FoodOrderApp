@@ -1,17 +1,13 @@
-﻿using FoodOrderApp.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
 using System.Windows.Forms;
+using FoodOrderApp.Data;
+using FoodOrderApp.Forms;
+using FoodOrderApp.Helpers;
 
-namespace FoodOrderApp.Forms
+namespace FoodOrderApp
 {
     internal static class Program
     {
-        /// <summary>
-        /// Главная точка входа для приложения.
-        /// </summary>
         [STAThread]
         static void Main()
         {
@@ -19,20 +15,36 @@ namespace FoodOrderApp.Forms
             Application.SetCompatibleTextRenderingDefault(false);
 
             var db = new DbManager();
-
             if (!db.CheckConnection())
             {
                 MessageBox.Show("Ошибка подключения к базе данных. Приложение будет закрыто.",
                                 "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return; // Выход из программы
+                return;
             }
-
-            var startupForm = new StartupForm();
-            startupForm.SetStatus("Соединение с БД успешно установлено.");
 
             DatabaseSeeder.CheckAndPromptDatabaseSeed();
 
-            Application.Run(startupForm);
+            var loginForm = new LoginForm();
+            var result = loginForm.ShowDialog();
+
+            if (result != DialogResult.OK || Session.CurrentUser == null)
+            {
+                return;
+            }
+
+            Form mainForm;
+
+            if (Session.CurrentUser.Role == Models.UserRole.admin)
+            {
+                mainForm = new AdminForm();
+            }
+            else
+            {
+                mainForm = new MainForm();
+            }
+
+            Application.Run(mainForm);
+
         }
     }
 }

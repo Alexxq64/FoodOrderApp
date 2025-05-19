@@ -37,6 +37,7 @@ namespace FoodOrderApp.Forms
                 Top = 60,
                 Width = 200
             };
+            btnManageUsers.Click += BtnManageUsers_Click;
 
             btnManageMenu = new Button
             {
@@ -45,6 +46,7 @@ namespace FoodOrderApp.Forms
                 Top = 100,
                 Width = 200
             };
+            btnManageMenu.Click += BtnManageMenu_Click;
 
             btnLogout = new Button
             {
@@ -59,6 +61,16 @@ namespace FoodOrderApp.Forms
             this.Controls.Add(btnManageUsers);
             this.Controls.Add(btnManageMenu);
             this.Controls.Add(btnLogout);
+        }
+
+        private void BtnManageUsers_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Здесь будет управление пользователями.", "Управление пользователями");
+        }
+
+        private void BtnManageMenu_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Здесь будет управление меню.", "Управление меню");
         }
 
         private void BtnLogout_Click(object sender, EventArgs e)
