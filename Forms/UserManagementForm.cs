@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Data;
+using System.Linq;
+using System.Windows.Forms;
 using FoodOrderApp.Data;
+using FoodOrderApp.Models;
 
 namespace FoodOrderApp.Forms
 {
     public class UserManagementForm : Form
     {
         private DataGridView usersGrid;
-        private Button btnAdd, btnEdit, btnDelete;
+        private Button btnDelete;
         private DbManager db;
 
         public UserManagementForm()
@@ -29,63 +31,143 @@ namespace FoodOrderApp.Forms
                 Left = 20,
                 Top = 20,
                 Width = 740,
-                Height = 350,
-                ReadOnly = true,
+                Height = 380,
+                AllowUserToAddRows = true,
+                AllowUserToDeleteRows = false,
+                ReadOnly = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
 
-            btnAdd = new Button
-            {
-                Text = "Добавить",
-                Left = 20,
-                Top = 390,
-                Width = 100
-            };
-            btnAdd.Click += BtnAdd_Click;
-
-            btnEdit = new Button
-            {
-                Text = "Редактировать",
-                Left = 140,
-                Top = 390,
-                Width = 100
-            };
-            btnEdit.Click += BtnEdit_Click;
+            usersGrid.CellEndEdit += UsersGrid_CellEndEdit;
+            usersGrid.RowValidating += UsersGrid_RowValidating;
 
             btnDelete = new Button
             {
                 Text = "Удалить",
-                Left = 260,
-                Top = 390,
+                Left = 20,
+                Top = 420,
                 Width = 100
             };
             btnDelete.Click += BtnDelete_Click;
 
             this.Controls.Add(usersGrid);
-            this.Controls.Add(btnAdd);
-            this.Controls.Add(btnEdit);
             this.Controls.Add(btnDelete);
         }
 
         private void LoadUsers()
         {
-            var dt = db.GetAllUsers(); // метод добавим ниже
-            usersGrid.DataSource = dt;
+            var users = db.GetAllUsers();
+            var table = new DataTable();
+
+            table.Columns.Add("Id", typeof(int));
+            table.Columns.Add("Names", typeof(string));
+            table.Columns.Add("Login", typeof(string));
+            table.Columns.Add("Role", typeof(string));
+            table.Columns.Add("Password", typeof(string));
+
+            foreach (var user in users)
+            {
+                table.Rows.Add(user.Id, user.Names, user.Login, user.Role.ToString(), user.Password);
+            }
+
+            usersGrid.DataSource = table;
+            usersGrid.Columns["Id"].ReadOnly = true; // ID не редактируем
         }
 
-        private void BtnAdd_Click(object sender, EventArgs e)
+        private void UsersGrid_RowValidating(object sender, DataGridViewCellCancelEventArgs e)
         {
-            MessageBox.Show("Форма добавления пользователя (в разработке)");
+            var row = usersGrid.Rows[e.RowIndex];
+            if (row.IsNewRow) return;
+
+            int id = row.Cells["Id"].Value is int val ? val : 0;
+            string names = row.Cells["Names"].Value?.ToString();
+            string login = row.Cells["Login"].Value?.ToString();
+            string roleStr = row.Cells["Role"].Value?.ToString();
+            string password = row.Cells["Password"].Value?.ToString();
+
+            if (string.IsNullOrWhiteSpace(names) ||
+                string.IsNullOrWhiteSpace(login) ||
+                string.IsNullOrWhiteSpace(roleStr) ||
+                string.IsNullOrWhiteSpace(password))
+            {
+                MessageBox.Show("Все поля (включая пароль) должны быть заполнены.");
+                e.Cancel = true;
+                return;
+            }
+
+            if (!Enum.TryParse(roleStr, true, out UserRole parsedRole))
+            {
+                MessageBox.Show("Роль должна быть admin или user.");
+                e.Cancel = true;
+                return;
+            }
+
+            if (id == 0)
+            {
+                try
+                {
+                    // Добавляем в базу
+                    db.AddUser(new User
+                    {
+                        Names = names,
+                        Login = login,
+                        Role = parsedRole,
+                        Password = password
+                    });
+
+                    // Получаем ID из базы (опционально)
+                    var newUser = db.GetUserByLogin(login);
+                    row.Cells["Id"].Value = newUser.Id; // обновляем ID в таблице
+
+                }
+                catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062)
+                {
+                    MessageBox.Show("Пользователь с таким логином уже существует.");
+                    e.Cancel = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Ошибка добавления пользователя: " + ex.Message);
+                    e.Cancel = true;
+                }
+            }
         }
 
-        private void BtnEdit_Click(object sender, EventArgs e)
+
+        private void UsersGrid_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            if (usersGrid.SelectedRows.Count == 0)
+            var row = usersGrid.Rows[e.RowIndex];
+            if (row.IsNewRow) return;
+
+            object idObj = row.Cells["Id"].Value;
+            int id = (idObj != null && idObj != DBNull.Value) ? Convert.ToInt32(idObj) : 0;
+
+            string names = row.Cells["Names"].Value?.ToString();
+            string login = row.Cells["Login"].Value?.ToString();
+            string roleStr = row.Cells["Role"].Value?.ToString();
+            string password = row.Cells["Password"].Value?.ToString();
+
+            if (string.IsNullOrWhiteSpace(names) ||
+                string.IsNullOrWhiteSpace(login) ||
+                string.IsNullOrWhiteSpace(roleStr) ||
+                string.IsNullOrWhiteSpace(password))
                 return;
 
-            var userId = usersGrid.SelectedRows[0].Cells["Id"].Value;
-            MessageBox.Show($"Редактирование пользователя ID: {userId} (в разработке)");
+            if (!Enum.TryParse(roleStr, true, out UserRole parsedRole))
+                return;
+
+            if (id > 0)
+            {
+                db.UpdateUser(new User
+                {
+                    Id = id,
+                    Names = names,
+                    Login = login,
+                    Role = parsedRole,
+                    Password = password
+                });
+            }
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
@@ -93,12 +175,16 @@ namespace FoodOrderApp.Forms
             if (usersGrid.SelectedRows.Count == 0)
                 return;
 
-            var userId = usersGrid.SelectedRows[0].Cells["Id"].Value;
+            var row = usersGrid.SelectedRows[0];
+            if (row.IsNewRow || row.Cells["Id"].Value == null)
+                return;
+
+            var userId = Convert.ToInt32(row.Cells["Id"].Value);
             var result = MessageBox.Show("Удалить пользователя?", "Подтверждение", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.Yes)
             {
-                db.DeleteUser(Convert.ToInt32(userId)); // метод добавим ниже
+                db.DeleteUser(userId);
                 LoadUsers();
             }
         }

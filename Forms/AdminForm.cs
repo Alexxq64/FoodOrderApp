@@ -10,8 +10,8 @@ namespace FoodOrderApp.Forms
         private Label welcomeLabel;
         private Button btnManageUsers;
         private Button btnManageMenu;
+        private Button btnManageOrders;    // Добавлена кнопка управления заказами
         private Button btnStatistics;
-        private Button btnLogout;
         private NavigationService _navigation;
 
         public AdminForm()
@@ -53,29 +53,29 @@ namespace FoodOrderApp.Forms
             };
             btnManageMenu.Click += BtnManageMenu_Click;
 
-            btnStatistics = new Button
+            btnManageOrders = new Button
             {
-                Text = "Статистика",
+                Text = "Управление заказами",
                 Left = 20,
                 Top = 140,
                 Width = 200
             };
-            btnStatistics.Click += (s, e) => _navigation.NavigateToStatistics();
+            btnManageOrders.Click += BtnManageOrders_Click;
 
-            btnLogout = new Button
+            btnStatistics = new Button
             {
-                Text = "Выход",
+                Text = "Статистика",
                 Left = 20,
                 Top = 180,
                 Width = 200
             };
-            btnLogout.Click += BtnLogout_Click;
+            btnStatistics.Click += (s, e) => _navigation.NavigateToStatistics();
 
             this.Controls.Add(welcomeLabel);
             this.Controls.Add(btnManageUsers);
             this.Controls.Add(btnManageMenu);
+            this.Controls.Add(btnManageOrders);
             this.Controls.Add(btnStatistics);
-            this.Controls.Add(btnLogout);
         }
 
         private void BtnManageUsers_Click(object sender, EventArgs e)
@@ -86,30 +86,14 @@ namespace FoodOrderApp.Forms
 
         private void BtnManageMenu_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Здесь будет управление меню.", "Управление меню");
+            var menuForm = new MenuManagementForm();
+            menuForm.ShowDialog();
         }
 
-        private void BtnLogout_Click(object sender, EventArgs e)
+        private void BtnManageOrders_Click(object sender, EventArgs e)
         {
-            // Очистить сессию и вернуться к логину
-            Session.CurrentUser = null;
-
-            var loginForm = new LoginForm();
-            this.Hide();
-
-            var result = loginForm.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                Form nextForm;
-                if (Session.CurrentUser.Role == Models.UserRole.admin)
-                    nextForm = new AdminForm();
-                else
-                    nextForm = new MainForm();
-
-                nextForm.Show();
-            }
-
-            this.Close(); // Закрываем текущую форму
+            var ordersForm = new OrderManagementForm();
+            ordersForm.ShowDialog();
         }
 
         protected override void OnLoad(EventArgs e)
