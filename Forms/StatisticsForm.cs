@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
-using FoodOrderApp.Services;  // Для получения данных статистики
-using FoodOrderApp.Helpers;   // Для Session
+using FoodOrderApp.Helpers;
+using FoodOrderApp.Data;  // добавлено
 
 namespace FoodOrderApp.Forms
 {
@@ -48,7 +48,6 @@ namespace FoodOrderApp.Forms
 
         private void LoadStatistics()
         {
-            // Проверка роли пользователя
             if (Session.CurrentUser?.Role != Models.UserRole.admin)
             {
                 MessageBox.Show("Доступ запрещён", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -56,9 +55,8 @@ namespace FoodOrderApp.Forms
                 return;
             }
 
-            // Получаем статистику из сервиса (заглушка)
-            var stats = StatisticsService.GetStatisticsSummary();
-
+            var db = new DbManager();
+            string stats = db.GetStatisticsSummary();
             statsTextBox.Text = stats;
         }
     }
